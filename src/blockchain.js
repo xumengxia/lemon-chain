@@ -21,19 +21,49 @@
 // }]
 
 const crypto = require('crypto')
+// 创世区块
+const initBlock = {
+    index: 0,
+    data: 'hello lemonChain',
+    prevHash: '0',
+    timestamp: 1751421855211,
+    nonce: 55982,
+    hash: '0000ab7c2978af9e832d6fb3de03e39ec53f4a6f21136d6e97bfecb99f847068'
+}
 class Blockchain {
     constructor() {
-        this.blockchain = [];
+        this.blockchain = [
+            initBlock // 创世区块
+        ];
         this.data = []
         this.difficulty = 4
-        const hash = this.computebHush(0, '0', new Date().getTime(), 'hello lemonChain', 1)
-        console.log(hash);
+        // const hash = this.computebHush(0, '0', 1751421855211, 'hello lemonChain', 1)
+        // console.log(hash);
 
+    }
+    // 获取最新区块
+    getLastBlock() {
+        return this.blockchain[this.blockchain.length - 1]
     }
     // 挖矿
     mine() {
-        // 生成新的区块
-        // 不停地算hash,知道符合难度的条件 新增区块
+        // 生成新的区块 -- 一页新的记账加入了区块链
+        // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
+        let nonce = 0
+        const index = this.blockchain.length
+        const data = this.data
+        const prevHash = this.getLastBlock().hash
+        let timestamp = new Date().getTime()
+        let hash = this.computebHush(index, prevHash, timestamp, data, nonce)
+        while (hash.slice(0, this.difficulty) !== '0'.repeat(this.difficulty)) {
+            nonce += 1
+            hash = this.computebHush(index, prevHash, timestamp, data, nonce)
+        }
+        console.log('mine over', {
+            index, data, prevHash, timestamp, nonce, hash
+        }
+        );
+
     }
     // 生成新区块
     generateNewBlock() {
@@ -49,3 +79,4 @@ class Blockchain {
     isValidChain() { }
 }
 let bc = new Blockchain()
+bc.mine()
