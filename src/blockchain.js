@@ -46,14 +46,25 @@ class Blockchain {
     getLastBlock() {
         return this.blockchain[this.blockchain.length - 1]
     }
+    // 交易
+    transfer(form, to, amount) {
+        const transObj = { form, to, amount }
+        this.data.push(transObj)
+        return transObj
+    }
+    // 查看余额
+    blance() { }
     // 挖矿
-    mine() {
+    mine(adress) {
         // 生成新的区块 -- 一页新的记账加入了区块链
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
+        // 挖矿结束 矿工奖励 成功给100
+        this.transfer('0', adress, 100)
         const newBlock = this.generateNewBlock()
         // 测试区块链是否合法，区块链和方法，新增一下
         if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {
             this.blockchain.push(newBlock)
+            this.data = []
             return newBlock
         } else {
             console.log('Error, Invalid Block', newBlock);

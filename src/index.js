@@ -11,17 +11,25 @@ function formatLog(data) {
     const head = Object.keys(first) // 获取键值name,age {name: '柠檬', age: 18}
     const table = new Table({
         head: head,
-        colWidths: new Array(head.length).fill(15) //[10, 20]
+        colWidths: new Array(head.length).fill(20) //[10, 20]
     });
     const res = data.map((v) => {
-        return head.map((h) => v[h]) // 获取键值对应的value v={name: '柠檬', age: 18} v[name]='柠檬'
+        return head.map((h) =>
+            // 优化一下输出
+            JSON.stringify(v[h], null, 1)) // 获取键值对应的value v={name: '柠檬', age: 18} v[name]='柠檬',
     })
     table.push(...res);
     console.log(table.toString());
 }
-
 vorpal
-    .command('mine', '挖矿')
+    .command('detail <index>', '查看区块详情')
+    .action(function (args, callback) {
+        const block = blockchain.blockchain[args.index]
+        this.log(JSON.stringify(block, null, 2));
+        callback();
+    });
+vorpal
+    .command('mine <adress>', '挖矿')
     .action(function (args, callback) {
         const newBlock = blockchain.mine()
         if (newBlock) {
@@ -35,6 +43,13 @@ vorpal
     .action(function (args, callback) {
         blockchain.blockchain
         this.log(formatLog(blockchain.blockchain));
+        callback();
+    });
+vorpal
+    .command('trans <form> <to> <amount>', '转账')
+    .action(function (args, callback) {
+        let trans = blockchain.transfer(args.form, args.to, args.amount)
+        formatLog(trans)
         callback();
     });
 // vorpal
