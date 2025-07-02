@@ -54,6 +54,7 @@ class Blockchain {
         // 测试区块链是否合法，区块链和方法，新增一下
         if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {
             this.blockchain.push(newBlock)
+            return newBlock
         } else {
             console.log('Error, Invalid Block', newBlock);
 
@@ -120,10 +121,12 @@ class Blockchain {
         return true
     }
 }
-let bc = new Blockchain()
-bc.mine()
+module.exports = Blockchain
+// 测试代码
+// let bc = new Blockchain()
+// bc.mine()
 // bc.mine()
 // bc.blockchain[2].prevHash = 'prevHash'
 // bc.mine()
 // bc.mine()
-console.log(bc.blockchain);
+// console.log(bc.blockchain);
