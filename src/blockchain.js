@@ -49,6 +49,18 @@ class Blockchain {
     mine() {
         // 生成新的区块 -- 一页新的记账加入了区块链
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
+        const newBlock = this.generateNewBlock()
+        // 测试区块链是否合法，区块链和方法，新增一下
+        if (this.isValidBlock(newBlock)) {
+            this.blockchain.push(newBlock)
+        } else {
+            console.log('Error, Invalid Block', newBlock);
+
+        }
+
+    }
+    // 生成新区块
+    generateNewBlock() {
         let nonce = 0
         const index = this.blockchain.length
         const data = this.data
@@ -59,14 +71,9 @@ class Blockchain {
             nonce += 1
             hash = this.computebHush(index, prevHash, timestamp, data, nonce)
         }
-        console.log('mine over', {
+        return {
             index, data, prevHash, timestamp, nonce, hash
         }
-        );
-
-    }
-    // 生成新区块
-    generateNewBlock() {
 
     }
     // 计算哈希
@@ -74,9 +81,28 @@ class Blockchain {
         return crypto.createHash('sha256').update(index + prevHash + timestamp + data + nonce).digest('hex')
     }
     // 校验区块
-    isValidBlock() { }
+    isValidBlock(newBlock) {
+        const lastBlock = this.getLastBlock()
+        // 1.区块的index是否等于最后区块的index+1
+        // 2.区块的time大于最新区块
+        // 3.最新区块的prevhash 等于最新区块的hash
+        // 4.区块的hash符合难度要求
+        if (newBlock.index !== lastBlock.index + 1) {
+            return false
+        } else if (newBlock.timestamp <= lastBlock.timestamp) {
+            return false
+        } else if (newBlock.prevHash !== lastBlock.hash) {
+            return false
+        } else if (newBlock.hash.slice(0, this.difficulty) !== '0'.repeat(this.difficulty)) {
+            return false
+        }
+        return true
+    }
     // 校验区块链
     isValidChain() { }
 }
 let bc = new Blockchain()
 bc.mine()
+bc.mine()
+
+console.log(bc.blockchain);
