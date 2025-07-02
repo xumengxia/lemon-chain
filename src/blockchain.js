@@ -20,7 +20,8 @@
 //     "nonce": "0"// 随机数
 // }]
 
-const crypto = require('crypto')
+const crypto = require('crypto');
+const { json } = require('stream/consumers');
 // 创世区块
 const initBlock = {
     index: 0,
@@ -51,7 +52,7 @@ class Blockchain {
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
         const newBlock = this.generateNewBlock()
         // 测试区块链是否合法，区块链和方法，新增一下
-        if (this.isValidBlock(newBlock)) {
+        if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {
             this.blockchain.push(newBlock)
         } else {
             console.log('Error, Invalid Block', newBlock);
@@ -80,13 +81,17 @@ class Blockchain {
     computebHush(index, prevHash, timestamp, data, nonce) {
         return crypto.createHash('sha256').update(index + prevHash + timestamp + data + nonce).digest('hex')
     }
+    computedHashForBlock({ index, prevHash, timestamp, data, nonce }) {
+        return this.computebHush(index, prevHash, timestamp, data, nonce)
+    }
     // 校验区块
-    isValidBlock(newBlock) {
-        const lastBlock = this.getLastBlock()
+    isValidBlock(newBlock, lastBlock = this.getLastBlock()) {
+        // const lastBlock = this.getLastBlock()
         // 1.区块的index是否等于最后区块的index+1
         // 2.区块的time大于最新区块
         // 3.最新区块的prevhash 等于最新区块的hash
         // 4.区块的hash符合难度要求
+        // 5.哈希值的
         if (newBlock.index !== lastBlock.index + 1) {
             return false
         } else if (newBlock.timestamp <= lastBlock.timestamp) {
@@ -95,14 +100,30 @@ class Blockchain {
             return false
         } else if (newBlock.hash.slice(0, this.difficulty) !== '0'.repeat(this.difficulty)) {
             return false
+        } else if (newBlock.hash !== this.computedHashForBlock(newBlock)) {
+            return false
         }
         return true
     }
     // 校验区块链
-    isValidChain() { }
+    isValidChain(chain = this.blockchain) {
+        // 除创始区块链外的校验
+        for (let i = chain.length - 1; i >= 1; i = i - 1) {
+            if (!this.isValidBlock(chain[i], chain[i - 1])) {
+                return false
+            }
+        }
+        // 创始区块链的校验
+        if (JSON.stringify(chain[0]) !== JSON.stringify(initBlock)) {
+            return false
+        }
+        return true
+    }
 }
 let bc = new Blockchain()
 bc.mine()
-bc.mine()
-
+// bc.mine()
+// bc.blockchain[2].prevHash = 'prevHash'
+// bc.mine()
+// bc.mine()
 console.log(bc.blockchain);
