@@ -10,5 +10,5 @@
 ``` 
 ### 命令行工具vorpal
 ```
-
+ npm install vorpal --save
 ```
