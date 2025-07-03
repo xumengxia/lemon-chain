@@ -1,5 +1,5 @@
 
-### 项目说明
+# 项目说明
 ```
  1.迷你区块链--lemon-chain
  2.区块链的生成，新增，校验
@@ -34,3 +34,4 @@ blance lemon
 ```
  npm install elliptic --save
 ```
+# P2P
