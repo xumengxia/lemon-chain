@@ -34,4 +34,10 @@ blance lemon
 ```
  npm install elliptic --save
 ```
-# P2P
+### P2P
+```
+p2p peer to peer 点对点
+udp协议
+只管发不管你有没有收到
+dgram自带模块处理udp
+```
