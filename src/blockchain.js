@@ -20,8 +20,10 @@
 //     "nonce": "0"// 随机数
 // }]
 
+const { log } = require('console');
 const crypto = require('crypto');
-const { json } = require('stream/consumers');
+const dgram = require('dgram')
+
 // 创世区块
 const initBlock = {
     index: 0,
@@ -40,8 +42,84 @@ class Blockchain {
         this.difficulty = 4
         // const hash = this.computebHush(0, '0', 1751421855211, 'hello lemonChain', 1)
         // console.log(hash);
+        this.peers = [] // 所有的网络节点信息，adress port
+        this.seed = { port: 8001, adress: 'localhost' } // 种子节点
+        this.udp = dgram.createSocket('udp4')
+        this.init()
+    }
+
+    init() {
+        this.bindP2p()
+        this.bindExit()
+    }
+
+    bindP2p() {
+        // 网络发来的消息
+        this.udp.on('message', (data, remote) => {
+            console.log('zade ,nibuguolai ');
+
+            const { adress, port } = remote
+            const action = JSON.parse(data)
+            // {
+            //     type: '要干啥',
+            //     data: '具体传递的信息'
+            // }
+            if (action.type) {
+                this.dispatch(action, { adress, port })
+            }
+        })
+        // 监听信息
+        this.udp.on('listening', () => {
+            const adress = this.udp.address()
+            console.log('[信息]：udp监听完毕 端口号是' + adress.port);
+
+        })
+        // 区分种子节点和普通节点
+        console.log(process.argv);
+        const port = Number(process.argv[2]) || 0
+        this.startNode(port)
 
     }
+
+    dispatch(action, remote) {
+        switch (action.type) {
+            case 'newpeer':
+                // 种子节点要做的事情
+                // 1.你的公网ip和port是啥
+                // 2.现在的全部节点的列表
+                console.log('你好，新朋友', remote);
+                break
+            default:
+                console.log('这个action不认识');
+
+
+        }
+    }
+
+    // 退出
+    bindExit() {
+        process.on('exit', () => {
+            console.log('【信息】：再见,期待下一次的见面');
+
+        })
+    }
+
+
+    startNode(port) {
+        this.udp.bind(port)
+        // 如果不是种子节点，需要发送一个消息告诉种子 我来了
+        if (port !== 8001) {
+            this.send({
+                type: 'newpeer'
+            }, this.seed.port, this.seed.adress)
+        }
+    }
+
+    send(message, port, adress) {
+        this.udp.send(JSON.stringify(message), port, adress)
+    }
+
+
     // 获取最新区块
     getLastBlock() {
         return this.blockchain[this.blockchain.length - 1]
