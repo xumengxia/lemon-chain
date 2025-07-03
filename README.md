@@ -30,3 +30,7 @@ blance lemon
 ```
  npm install cli-table
 ```
+### RSA非对称加密
+```
+ npm install elliptic --save
+```
