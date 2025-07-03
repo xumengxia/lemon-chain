@@ -47,13 +47,44 @@ class Blockchain {
         return this.blockchain[this.blockchain.length - 1]
     }
     // 交易
-    transfer(form, to, amount) {
-        const transObj = { form, to, amount }
+    transfer(from, to, amount) {
+        if (from !== '0') {
+            // 交易非挖矿
+            const blance = this.blance(from)
+            if (blance < amount) {
+                console.log('not enough blance', from, blance, amount)
+                return
+            }
+        }
+        const transObj = { from, to, amount }
         this.data.push(transObj)
         return transObj
     }
     // 查看余额
-    blance() { }
+    blance(adress) {
+        let blance = 0
+        this.blockchain.forEach((block) => {
+            console.log(block, 'block');
+
+            if (!Array.isArray(block.data)) {
+                // 创世区块是字符串排除
+                return
+            }
+            block.data.forEach((trans) => {
+                if (adress == trans.from) {
+                    // from转账出去的人
+                    blance -= trans.amount
+                }
+                if (adress == trans.to) {
+                    // to收到钱的人
+                    blance += trans.amount
+                }
+            })
+        })
+
+        console.log(blance, 'blance');
+        return blance
+    }
     // 挖矿
     mine(adress) {
         // 生成新的区块 -- 一页新的记账加入了区块链

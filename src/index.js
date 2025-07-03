@@ -22,6 +22,15 @@ function formatLog(data) {
     console.log(table.toString());
 }
 vorpal
+    .command('blance <adress>', '查看余额')
+    .action(function (args, callback) {
+        const blance = blockchain.blance(args.adress)
+        if (blance) {
+            formatLog({ blance, adress: args.adress })
+        }
+        callback();
+    });
+vorpal
     .command('detail <index>', '查看区块详情')
     .action(function (args, callback) {
         const block = blockchain.blockchain[args.index]
@@ -31,7 +40,7 @@ vorpal
 vorpal
     .command('mine <adress>', '挖矿')
     .action(function (args, callback) {
-        const newBlock = blockchain.mine()
+        const newBlock = blockchain.mine(args.adress)
         if (newBlock) {
             console.log(formatLog(newBlock));
         }
@@ -46,9 +55,9 @@ vorpal
         callback();
     });
 vorpal
-    .command('trans <form> <to> <amount>', '转账')
+    .command('trans <from> <to> <amount>', '转账')
     .action(function (args, callback) {
-        let trans = blockchain.transfer(args.form, args.to, args.amount)
+        let trans = blockchain.transfer(args.from, args.to, args.amount)
         formatLog(trans)
         callback();
     });
