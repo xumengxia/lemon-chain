@@ -79,3 +79,18 @@ npm start
  1. 新节点加入，同步种子节点的区块链信息
  2. 挖矿广播
  3. 交易广播
+
+# 同步挖矿信息
+
+```
+启动种子节点 npm start 8001
+子挖矿
+mine lemon
+mine lemon
+启动多个服务
+npm start
+npm start
+8001子节点执行 blockchain 
+其他服务执行 blockchain 
+对比执行结果是否相同
+```

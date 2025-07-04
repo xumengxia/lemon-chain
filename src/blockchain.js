@@ -74,7 +74,7 @@ class Blockchain {
 
         })
         // 区分种子节点和普通节点
-        console.log(process.argv);
+        // console.log(process.argv);
         const port = Number(process.argv[2]) || 0
         this.startNode(port)
 
@@ -138,6 +138,26 @@ class Blockchain {
             case 'hi':
                 console.log(`${remote.address}:${remote.port}:${action.data}`);
                 break
+            case 'mine':
+                // 网络上有人挖矿成功
+                const lastBlock = this.getLastBlock()
+                if (lastBlock.hash == action.data.hash) {
+                    // 重复的信息
+                    return
+                }
+                if (this.isValidBlock(action.data, lastBlock)) {
+                    console.log('[信息]： 有朋友挖矿成功，祝贺他，放烟花');
+                    this.blockchain.push(action.data)
+                    this.data = []
+                    this.boardcast({
+                        type: 'mine',
+                        data: action.data
+                    })
+                } else {
+                    console.log('挖矿失败');
+
+                }
+                break
             default:
                 console.log('这个action不认识');
         }
@@ -180,11 +200,11 @@ class Blockchain {
         }
         // 把种子节点加入到本地的节点中
         this.addPeers(this.seed)
-        console.log('当前节点列表：', this.peers);
+        // console.log('当前节点列表：', this.peers);
     }
 
     send(message, port, address) {
-        console.log(message, port, address);
+        // console.log(message, port, address);
         this.udp.send(JSON.stringify(message), port, address)
     }
 
@@ -210,7 +230,7 @@ class Blockchain {
         }
         // 签名
         const sig = sign({ from, to, amount })
-        console.log(sig);
+        // console.log(sig);
 
         const sigTrans = { from, to, amount, sig }
         this.data.push(sigTrans)
@@ -220,7 +240,7 @@ class Blockchain {
     blance(address) {
         let blance = 0
         this.blockchain.forEach((block) => {
-            console.log(block, 'block');
+            // console.log(block, 'block');
 
             if (!Array.isArray(block.data)) {
                 // 创世区块是字符串排除
@@ -238,7 +258,7 @@ class Blockchain {
             })
         })
 
-        console.log(blance, 'blance');
+        // console.log(blance, 'blance');
         return blance
     }
 
@@ -268,12 +288,10 @@ class Blockchain {
         if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {
             this.blockchain.push(newBlock)
             this.data = []
-            // 广播最新的区块链数据给所有节点
+            console.log('[信息] 挖矿成功');
             this.boardcast({
-                type: 'blockchain',
-                data: JSON.stringify({
-                    blockchain: this.blockchain
-                })
+                type: 'mine',
+                data: newBlock
             })
             return newBlock
         } else {
