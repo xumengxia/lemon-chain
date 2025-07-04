@@ -98,8 +98,24 @@ class Blockchain {
                 // 3.告诉所有的已知节点 来了个新朋友 快打招呼
                 this.boardcast({ type: 'sayhi', data: remote })
                 // 4.告诉你现在的区块链数据
+                this.send(
+                    {
+                        type: 'blockchain',
+                        data: JSON.stringify({
+                            blockchain: this.blockchain,
+
+                        })
+                    }, remote.port, remote.address
+                )
+
                 this.addPeers(remote)
                 console.log('你好，新朋友', remote);
+                break
+            case 'blockchain':
+                // 同步本地链
+                let allData = JSON.parse(action.data)
+                let newChain = allData.blockchain
+                this.replaceChain(newChain)
                 break
             case 'remoteAddress':
                 // 存储远程消息，退出的时候使用
@@ -252,12 +268,17 @@ class Blockchain {
         if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {
             this.blockchain.push(newBlock)
             this.data = []
+            // 广播最新的区块链数据给所有节点
+            this.boardcast({
+                type: 'blockchain',
+                data: JSON.stringify({
+                    blockchain: this.blockchain
+                })
+            })
             return newBlock
         } else {
             console.log('Error, Invalid Block', newBlock);
-
         }
-
     }
     // 生成新区块
     generateNewBlock() {
@@ -317,6 +338,35 @@ class Blockchain {
             return false
         }
         return true
+    }
+
+    // 替换链
+    replaceChain(newChain) {
+        if (!newChain || !Array.isArray(newChain)) {
+            console.log('[错误]：无效的区块链数据');
+            return;
+        }
+
+        if (newChain.length === 1) {
+            // 创世链不用校验
+            return;
+        }
+
+        // 验证新链的合法性
+        if (this.isValidChain(newChain)) {
+            if (newChain.length > this.blockchain.length) {
+                console.log('[信息]：接收到更长的链，正在更新本地区块链...');
+                // 替换深拷贝
+                this.blockchain = JSON.parse(JSON.stringify(newChain));
+                // 清空当前的交易数据，因为可能已经被打包到新链中
+                this.data = [];
+                console.log('[信息]：区块链更新完成，当前区块数量：', this.blockchain.length);
+            } else {
+                console.log('[信息]：接收到的链不比本地链长，无需更新');
+            }
+        } else {
+            console.log('[错误]：接收到的区块链数据不合法');
+        }
     }
 }
 module.exports = Blockchain
