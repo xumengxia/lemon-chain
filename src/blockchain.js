@@ -43,7 +43,7 @@ class Blockchain {
         // const hash = this.computebHush(0, '0', 1751421855211, 'hello lemonChain', 1)
         // console.log(hash);
         this.peers = [] // 所有的网络节点信息，adress port
-        this.seed = { port: 8001, adress: 'localhost' } // 种子节点
+        this.seed = { port: 8001, address: 'localhost' } // 种子节点
         this.remote = {}
         this.udp = dgram.createSocket('udp4')
         this.init()
@@ -57,22 +57,20 @@ class Blockchain {
     bindP2p() {
         // 网络发来的消息
         this.udp.on('message', (data, remote) => {
-            console.log('zade ,nibuguolai ');
-
-            const { adress, port } = remote
+            const { address, port } = remote
             const action = JSON.parse(data)
             // {
             //     type: '要干啥',
             //     data: '具体传递的信息'
             // }
             if (action.type) {
-                this.dispatch(action, { adress, port })
+                this.dispatch(action, { address, port })
             }
         })
         // 监听信息
         this.udp.on('listening', () => {
-            const adress = this.udp.address()
-            console.log('[信息]：udp监听完毕 端口号是' + adress.port);
+            const address = this.udp.address()
+            console.log('[信息]：udp监听完毕 端口号是' + address.port);
 
         })
         // 区分种子节点和普通节点
@@ -83,8 +81,7 @@ class Blockchain {
     }
 
     dispatch(action, remote) {
-        console.log('接收到p2p网络的消息', action);
-
+        // console.log('接收到p2p网络的消息', action);
         switch (action.type) {
             case 'newpeer':
                 // 种子节点要做的事情
@@ -101,8 +98,7 @@ class Blockchain {
                 // 3.告诉所有的已知节点 来了个新朋友 快打招呼
                 this.boardcast({ type: 'sayhi', data: remote })
                 // 4.告诉你现在的区块链数据
-                this.peers.push(remote)
-
+                this.addPeers(remote)
                 console.log('你好，新朋友', remote);
                 break
             case 'remoteAddress':
@@ -116,7 +112,7 @@ class Blockchain {
                 break
             case 'sayhi':
                 let remotePeer = action.data
-                this.peers.push(remotePeer)
+                this.addPeers(remotePeer)
                 console.log('你好，新朋友');
                 this.send({
                     type: 'hi',
@@ -125,22 +121,29 @@ class Blockchain {
                 break
             case 'hi':
                 console.log(`${remote.address}:${remote.port}:${action.data}`);
-
                 break
             default:
                 console.log('这个action不认识');
-
-
         }
     }
     isEqualPeer(peer1, peer2) {
         return peer1.port === peer2.port && peer1.address === peer2.address
     }
-    addPeers(newPeers) {
-        // 如果不存在，就添加一个newPeers
-        if (!this.peers.find((v) => this.isEqualPeer(newPeers, v))) {
-            this.peers.push(newPeers)
-        }
+    addPeers(peers) {
+        // 统一转换为数组处理
+        const peersArray = Array.isArray(peers) ? peers : [peers];
+
+        peersArray.forEach(peer => {
+            // 检查是否已存在相同的peer
+            const isExist = this.peers.some(existingPeer =>
+                this.isEqualPeer(peer, existingPeer)
+            );
+
+            // 如果不存在，则添加
+            if (!isExist) {
+                this.peers.push(peer);
+            }
+        });
     }
     // 退出
     bindExit() {
@@ -157,12 +160,16 @@ class Blockchain {
         if (port !== 8001) {
             this.send({
                 type: 'newpeer'
-            }, this.seed.port, this.seed.adress)
+            }, this.seed.port, this.seed.address)
         }
+        // 把种子节点加入到本地的节点中
+        this.addPeers(this.seed)
+        console.log('当前节点列表：', this.peers);
     }
 
-    send(message, port, adress) {
-        this.udp.send(JSON.stringify(message), port, adress)
+    send(message, port, address) {
+        console.log(message, port, address);
+        this.udp.send(JSON.stringify(message), port, address)
     }
 
     // 广播 全场
@@ -194,7 +201,7 @@ class Blockchain {
         return sigTrans
     }
     // 查看余额
-    blance(adress) {
+    blance(address) {
         let blance = 0
         this.blockchain.forEach((block) => {
             console.log(block, 'block');
@@ -204,11 +211,11 @@ class Blockchain {
                 return
             }
             block.data.forEach((trans) => {
-                if (adress == trans.from) {
+                if (address == trans.from) {
                     // from转账出去的人
                     blance -= trans.amount
                 }
-                if (adress == trans.to) {
+                if (address == trans.to) {
                     // to收到钱的人
                     blance += trans.amount
                 }
@@ -223,11 +230,11 @@ class Blockchain {
     isvalidTrans(trans) {
         // 是不是合法的转账
         // 地址就是公钥
-        return verify({ trans, trans.from })
+        return verify({ trans })
     }
 
     // 挖矿
-    mine(adress) {
+    mine(address) {
         // 校验所有的消息合法性
         //  只要有不合法的就报错
         // if (!this.data.every((v) => this.isvalidTrans(v))) {
@@ -239,7 +246,7 @@ class Blockchain {
         // 生成新的区块 -- 一页新的记账加入了区块链
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
         // 挖矿结束 矿工奖励 成功给100
-        this.transfer('0', adress, 100)
+        this.transfer('0', address, 100)
         const newBlock = this.generateNewBlock()
         // 测试区块链是否合法，区块链和方法，新增一下
         if (this.isValidBlock(newBlock) && this.isValidChain(this.blockchain)) {

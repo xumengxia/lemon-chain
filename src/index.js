@@ -5,6 +5,9 @@ const blockchain = new Blockchain();
 const { keys } = require('./rsa')
 // 格式化输出
 function formatLog(data) {
+    if (!data || data.length == 0) {
+        return
+    }
     if (!Array.isArray(data)) {
         data = [data]
     }
@@ -23,11 +26,11 @@ function formatLog(data) {
     console.log(table.toString());
 }
 vorpal
-    .command('blance <adress>', '查看余额')
+    .command('blance <address>', '查看余额')
     .action(function (args, callback) {
-        const blance = blockchain.blance(args.adress)
+        const blance = blockchain.blance(args.address)
         if (blance) {
-            formatLog({ blance, adress: args.adress })
+            formatLog({ blance, address: args.address })
         }
         callback();
     });
@@ -50,7 +53,7 @@ vorpal
         callback();
     });
 vorpal
-    .command('chain', '查看区块链')
+    .command('blockchain', '查看区块链')
     .action(function (args, callback) {
         blockchain.blockchain
         this.log(formatLog(blockchain.blockchain));
@@ -63,11 +66,28 @@ vorpal
         callback();
     });
 vorpal
+    .command('peers', '查看网络节点列表')
+    .action(function (args, callback) {
+        console.log(blockchain.peers);
+
+        this.log(formatLog(blockchain.peers), '查看网络节点列表');
+        callback();
+    });
+vorpal
     .command('trans  <to> <amount>', '转账')
     .action(function (args, callback) {
         // 使用本地公钥当做转出地址
         let trans = blockchain.transfer(keys.pub, args.to, args.amount)
         formatLog(trans)
+        callback();
+    });
+vorpal
+    .command('chat <msg>', '跟别的节点hi一下')
+    .action(function (args, callback) {
+        blockchain.boardcast({
+            type: 'hi',
+            data: args.msg
+        })
         callback();
     });
 // vorpal
