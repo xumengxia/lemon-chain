@@ -44,6 +44,7 @@ class Blockchain {
         // console.log(hash);
         this.peers = [] // 所有的网络节点信息，adress port
         this.seed = { port: 8001, adress: 'localhost' } // 种子节点
+        this.remote = {}
         this.udp = dgram.createSocket('udp4')
         this.init()
     }
@@ -82,12 +83,49 @@ class Blockchain {
     }
 
     dispatch(action, remote) {
+        console.log('接收到p2p网络的消息', action);
+
         switch (action.type) {
             case 'newpeer':
                 // 种子节点要做的事情
                 // 1.你的公网ip和port是啥
+                this.send({
+                    type: 'remoteAddress',
+                    data: remote
+                }, remote.port, remote.address)
                 // 2.现在的全部节点的列表
+                this.send({
+                    type: 'peerList',
+                    data: this.peers
+                }, remote.port, remote.address)
+                // 3.告诉所有的已知节点 来了个新朋友 快打招呼
+                this.boardcast({ type: 'sayhi', data: remote })
+                // 4.告诉你现在的区块链数据
+                this.peers.push(remote)
+
                 console.log('你好，新朋友', remote);
+                break
+            case 'remoteAddress':
+                // 存储远程消息，退出的时候使用
+                this.remote = action.data
+                break
+            case 'peerList':
+                // 远程告诉我现在的节点列表
+                const newPeers = action.data
+                this.addPeers(newPeers)
+                break
+            case 'sayhi':
+                let remotePeer = action.data
+                this.peers.push(remotePeer)
+                console.log('你好，新朋友');
+                this.send({
+                    type: 'hi',
+                    data: 'hi'
+                }, remote.port, remote.address)
+                break
+            case 'hi':
+                console.log(`${remote.address}:${remote.port}:${action.data}`);
+
                 break
             default:
                 console.log('这个action不认识');
@@ -95,7 +133,15 @@ class Blockchain {
 
         }
     }
-
+    isEqualPeer(peer1, peer2) {
+        return peer1.port === peer2.port && peer1.address === peer2.address
+    }
+    addPeers(newPeers) {
+        // 如果不存在，就添加一个newPeers
+        if (!this.peers.find((v) => this.isEqualPeer(newPeers, v))) {
+            this.peers.push(newPeers)
+        }
+    }
     // 退出
     bindExit() {
         process.on('exit', () => {
@@ -119,7 +165,12 @@ class Blockchain {
         this.udp.send(JSON.stringify(message), port, adress)
     }
 
-
+    // 广播 全场
+    boardcast(action) {
+        this.peers.forEach((v) => {
+            this.send(action, v.port, v.address)
+        })
+    }
     // 获取最新区块
     getLastBlock() {
         return this.blockchain[this.blockchain.length - 1]
