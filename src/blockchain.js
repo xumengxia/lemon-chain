@@ -23,7 +23,7 @@
 const { log } = require('console');
 const crypto = require('crypto');
 const dgram = require('dgram')
-
+const { sign, verify, keys } = require('./rsa')
 // 创世区块
 const initBlock = {
     index: 0,
@@ -185,9 +185,13 @@ class Blockchain {
                 return
             }
         }
-        const transObj = { from, to, amount }
-        this.data.push(transObj)
-        return transObj
+        // 签名
+        const sig = sign({ from, to, amount })
+        console.log(sig);
+
+        const sigTrans = { from, to, amount, sig }
+        this.data.push(sigTrans)
+        return sigTrans
     }
     // 查看余额
     blance(adress) {
@@ -214,8 +218,24 @@ class Blockchain {
         console.log(blance, 'blance');
         return blance
     }
+
+    // 校验交易
+    isvalidTrans(trans) {
+        // 是不是合法的转账
+        // 地址就是公钥
+        return verify({ trans, trans.from })
+    }
+
     // 挖矿
     mine(adress) {
+        // 校验所有的消息合法性
+        //  只要有不合法的就报错
+        // if (!this.data.every((v) => this.isvalidTrans(v))) {
+        //     console.log('trans not valid');
+        //     return
+        // }
+        // 过滤不合法的
+        this.data = this.data.filter((v) => this.data.every((v) => this.isvalidTrans(v)))
         // 生成新的区块 -- 一页新的记账加入了区块链
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
         // 挖矿结束 矿工奖励 成功给100

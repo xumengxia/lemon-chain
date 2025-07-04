@@ -2,6 +2,7 @@ const vorpal = require('vorpal')();
 const Blockchain = require('./blockchain');
 const Table = require('cli-table');
 const blockchain = new Blockchain();
+const { keys } = require('./rsa')
 // 格式化输出
 function formatLog(data) {
     if (!Array.isArray(data)) {
@@ -38,9 +39,10 @@ vorpal
         callback();
     });
 vorpal
-    .command('mine <adress>', '挖矿')
+    .command('mine', '挖矿')
     .action(function (args, callback) {
-        const newBlock = blockchain.mine(args.adress)
+        // 给自己挖矿不需要地址
+        const newBlock = blockchain.mine(keys.pub)
         if (newBlock) {
             console.log(formatLog(newBlock));
         }
@@ -55,9 +57,16 @@ vorpal
         callback();
     });
 vorpal
-    .command('trans <from> <to> <amount>', '转账')
+    .command('pub', '查看本地地址')
     .action(function (args, callback) {
-        let trans = blockchain.transfer(args.from, args.to, args.amount)
+        this.log(keys.pub, '本地地址');
+        callback();
+    });
+vorpal
+    .command('trans  <to> <amount>', '转账')
+    .action(function (args, callback) {
+        // 使用本地公钥当做转出地址
+        let trans = blockchain.transfer(keys.pub, args.to, args.amount)
         formatLog(trans)
         callback();
     });

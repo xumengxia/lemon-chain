@@ -70,4 +70,7 @@ function verify({ from, to, amount, signature }, pub) {
 // trans1.signature = sign(trans)
 // const verifyFlag = verify(trans1, keys.pub) // 签名是trans的所以是false
 // console.log(verifyFlag, 'verifyFlag');
+module.exports = {
+    sign, verify, keys
+}
 

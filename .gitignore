@@ -1,3 +1,4 @@
 # 忽略 node_modules
 node_modules/
 wallet.json
+README.md
