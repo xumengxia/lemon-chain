@@ -1,4 +1,5 @@
-const { log } = require('console');
+const process = require('process');
+const { Buffer } = require('buffer');
 const dgram = require('dgram')
 const udp = dgram.createSocket('udp4')
 // 新节点给所有已知节点发消息，新节点的网件上把所有的节点都加上白名单

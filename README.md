@@ -94,3 +94,9 @@ npm start
 其他服务执行 blockchain 
 对比执行结果是否相同
 ```
+
+# eslint规范代码
+```
+  npm add -g eslint 
+  eslint --init
+```

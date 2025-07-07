@@ -10,8 +10,8 @@
 // 1.公私钥对
 // 2.公钥直接当成地址使用(或者截取公钥的前20个字符)
 // 3.公钥可以通过私钥计算出来
+const { Buffer } = require('buffer');
 let fs = require('fs');
-
 let EC = require('elliptic').ec;
 
 // Create and initialize EC context
@@ -42,6 +42,7 @@ function generateKeys() {
 
     } catch (error) {
         // 文件内容不存在或者文件不合法，重新生成
+        console.log('[error]:' + error);
         const res = {
             prv: keypair.getPrivate('hex').toString(),
             pub: keypair.getPublic('hex').toString()

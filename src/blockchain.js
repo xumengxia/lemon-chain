@@ -1,3 +1,4 @@
+
 // 1.迷你区块链--lemon-chain
 // 2.区块链的生成，新增，校验
 // 3.交易
@@ -19,11 +20,11 @@
 //     "prevHash": "0",//上一个区块的,哈希值1
 //     "nonce": "0"// 随机数
 // }]
+const process = require('process');
 
-const { log } = require('console');
 const crypto = require('crypto');
 const dgram = require('dgram')
-const { sign, verify, keys } = require('./rsa')
+const { sign, verify } = require('./rsa')
 // 创世区块
 const initBlock = {
     index: 0,
@@ -81,7 +82,9 @@ class Blockchain {
     }
 
     dispatch(action, remote) {
-        // console.log('接收到p2p网络的消息', action);
+        // 预先声明所有变量
+        let allData, newChain, newPeers, remotePeer, lastBlock;
+
         switch (action.type) {
             case 'newpeer':
                 // 种子节点要做的事情
@@ -103,41 +106,39 @@ class Blockchain {
                         type: 'blockchain',
                         data: JSON.stringify({
                             blockchain: this.blockchain,
-
                         })
                     }, remote.port, remote.address
                 )
-
                 this.addPeers(remote)
                 console.log('你好，新朋友', remote);
-                break
+                break;
             case 'blockchain':
                 // 同步本地链
-                let allData = JSON.parse(action.data)
-                let newChain = allData.blockchain
-                this.replaceChain(newChain)
-                break
+                allData = JSON.parse(action.data);
+                newChain = allData.blockchain;
+                this.replaceChain(newChain);
+                break;
             case 'remoteAddress':
                 // 存储远程消息，退出的时候使用
-                this.remote = action.data
-                break
+                this.remote = action.data;
+                break;
             case 'peerList':
                 // 远程告诉我现在的节点列表
-                const newPeers = action.data
-                this.addPeers(newPeers)
-                break
+                newPeers = action.data;
+                this.addPeers(newPeers);
+                break;
             case 'sayhi':
-                let remotePeer = action.data
-                this.addPeers(remotePeer)
+                remotePeer = action.data;
+                this.addPeers(remotePeer);
                 console.log('你好，新朋友');
                 this.send({
                     type: 'hi',
                     data: 'hi'
-                }, remote.port, remote.address)
-                break
+                }, remote.port, remote.address);
+                break;
             case 'hi':
                 console.log(`${remote.address}:${remote.port}:${action.data}`);
-                break
+                break;
             case 'trans':
                 // 网络上收到的交易请求
                 console.log('[信息] 收到新的交易请求');
@@ -149,27 +150,26 @@ class Blockchain {
                         data: action.data
                     });
                 }
-                break
+                break;
             case 'mine':
                 // 网络上有人挖矿成功
-                const lastBlock = this.getLastBlock()
+                lastBlock = this.getLastBlock();
                 if (lastBlock.hash == action.data.hash) {
                     // 重复的信息
-                    return
+                    return;
                 }
                 if (this.isValidBlock(action.data, lastBlock)) {
                     console.log('[信息]： 有朋友挖矿成功，祝贺他，放烟花');
-                    this.blockchain.push(action.data)
-                    this.data = []
+                    this.blockchain.push(action.data);
+                    this.data = [];
                     this.boardcast({
                         type: 'mine',
                         data: action.data
-                    })
+                    });
                 } else {
                     console.log('挖矿失败');
-
                 }
-                break
+                break;
             default:
                 console.log('这个action不认识');
         }
@@ -344,7 +344,7 @@ class Blockchain {
         //     return
         // }
         // 过滤不合法的
-        this.data = this.data.filter((v) => this.data.every((v) => this.isvalidTrans(v)))
+        this.data = this.data.filter(() => this.data.every((v) => this.isvalidTrans(v)))
         // 生成新的区块 -- 一页新的记账加入了区块链
         // 不停地算hash,直到计算出否和条件的哈希值，获取记账权
         // 挖矿结束 矿工奖励 成功给100
