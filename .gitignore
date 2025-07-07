@@ -1,4 +1,5 @@
 # 忽略 node_modules
 node_modules/
 wallet.json
-README.md
+wallet1.json
+wallet2.json

@@ -10,7 +10,8 @@
 // 1.公私钥对
 // 2.公钥直接当成地址使用(或者截取公钥的前20个字符)
 // 3.公钥可以通过私钥计算出来
-let fs = require('fs')
+let fs = require('fs');
+
 let EC = require('elliptic').ec;
 
 // Create and initialize EC context
@@ -51,18 +52,54 @@ function generateKeys() {
 }
 
 // 2.签名
-function sign({ from, to, amount }) {
-    const bufferMsg = Buffer.from(`${from}-${to}-${amount}`)
-    let signature = Buffer.from(keypair.sign(bufferMsg).toDER()).toString('hex')
-    return signature
+function sign(data) {
+    try {
+        const { from, to, amount, timestamp } = data;
+        // 挖矿奖励交易不需要签名
+        if (from === '0') {
+            return '0';
+        }
+        const message = Buffer.from(`${timestamp}-${amount}-${from}-${to}`);
+        return Buffer.from(keypair.sign(message).toDER()).toString('hex');
+    } catch (error) {
+        console.log('[错误] 生成签名失败:', error.message);
+        return null;
+    }
 }
+
 // 3.校验签名
-function verify({ from, to, amount, signature }, pub) {
-    // 校验是没有私钥
-    const keypairTemp = ec.keyFromPublic(pub, 'hex')
-    const bufferMsg = Buffer.from(`${from}-${to}-${amount}`)
-    return keypairTemp.verify(bufferMsg, signature)
+function verify(data) {
+    try {
+        const { from, to, amount, timestamp, signature } = data;
+
+        // 挖矿奖励交易不需要验证签名
+        if (from === '0') {
+            return signature === '0';  // 确保挖矿交易的签名是'0'
+        }
+
+        // 检查必要的字段
+        if (!from || !to || amount === undefined || !timestamp || !signature) {
+            console.log('[错误] 交易数据不完整' + JSON.stringify(data));
+            return false;
+        }
+
+        try {
+            // 使用发送方的公钥（from就是公钥）
+            const keypairTemp = ec.keyFromPublic(from, 'hex');
+            const message = Buffer.from(`${timestamp}-${amount}-${from}-${to}`);
+            // 将十六进制字符串转换回Buffer，然后转换为DER格式
+            const signatureBuffer = Buffer.from(signature, 'hex');
+            return keypairTemp.verify(message, signatureBuffer);
+        } catch (error) {
+            console.log('[错误] 签名格式错误:', error.message);
+            return false;
+        }
+    } catch (error) {
+        console.log('[错误] 验证签名失败:', error.message);
+        return false;
+    }
 }
+
 // 测试签名
 // const trans = { from: 'lemon', to: 'uu', amount: 10 }
 // const trans1 = { from: 'lemon1', to: 'uu', amount: 10 }

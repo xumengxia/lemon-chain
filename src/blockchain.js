@@ -138,6 +138,18 @@ class Blockchain {
             case 'hi':
                 console.log(`${remote.address}:${remote.port}:${action.data}`);
                 break
+            case 'trans':
+                // 网络上收到的交易请求
+                console.log('[信息] 收到新的交易请求');
+                // 添加到交易池（包含验证和去重）
+                if (this.addTrans(action.data)) {
+                    // 如果成功添加，继续广播给其他节点
+                    this.boardcast({
+                        type: 'trans',
+                        data: action.data
+                    });
+                }
+                break
             case 'mine':
                 // 网络上有人挖矿成功
                 const lastBlock = this.getLastBlock()
@@ -162,9 +174,18 @@ class Blockchain {
                 console.log('这个action不认识');
         }
     }
-    isEqualPeer(peer1, peer2) {
-        return peer1.port === peer2.port && peer1.address === peer2.address
+    // 校验是否有重复的交易数据
+    isEqualObj(obj1, obj2) {
+        const key1 = Object.keys(obj1)
+        const key2 = Object.keys(obj2)
+        if (key1.length !== key2.length) {
+            return false // key数量不同
+        }
+        return key1.every((key) => obj1[key] === obj2[key])
     }
+    // isEqualPeer(peer1, peer2) {
+    //     return peer1.port === peer2.port && peer1.address === peer2.address
+    // }
     addPeers(peers) {
         // 统一转换为数组处理
         const peersArray = Array.isArray(peers) ? peers : [peers];
@@ -172,7 +193,7 @@ class Blockchain {
         peersArray.forEach(peer => {
             // 检查是否已存在相同的peer
             const isExist = this.peers.some(existingPeer =>
-                this.isEqualPeer(peer, existingPeer)
+                this.isEqualObj(peer, existingPeer)
             );
 
             // 如果不存在，则添加
@@ -220,21 +241,48 @@ class Blockchain {
     }
     // 交易
     transfer(from, to, amount) {
+        const timestamp = new Date().getTime()
+        const data = { from, to, amount, timestamp }
+
         if (from !== '0') {
-            // 交易非挖矿
+            // 交易非挖矿，需要检查余额
             const blance = this.blance(from)
             if (blance < amount) {
-                console.log('not enough blance', from, blance, amount)
+                console.log('[错误] 余额不足', from, blance, amount)
                 return
             }
         }
-        // 签名
-        const sig = sign({ from, to, amount })
-        // console.log(sig);
 
-        const sigTrans = { from, to, amount, sig }
-        this.data.push(sigTrans)
-        return sigTrans
+        // 生成签名
+        const signature = sign(data)
+        if (!signature) {
+            console.log('[错误] 生成签名失败');
+            return;
+        }
+
+        const sigTrans = { ...data, signature }
+
+        // 验证交易
+        if (!this.isvalidTrans(sigTrans)) {
+            console.log('[错误] 交易验证失败');
+            return;
+        }
+
+        // 如果是挖矿奖励交易，直接添加到本地交易池
+        if (from === '0') {
+            this.data.push(sigTrans);
+            return sigTrans;
+        }
+
+        // 广播交易到网络
+        this.boardcast({
+            type: 'trans',
+            data: sigTrans
+        });
+
+        // 将交易添加到本地待处理池
+        this.addTrans(sigTrans);
+        return sigTrans;
     }
     // 查看余额
     blance(address) {
@@ -266,9 +314,27 @@ class Blockchain {
     isvalidTrans(trans) {
         // 是不是合法的转账
         // 地址就是公钥
-        return verify({ trans })
+        return verify(trans)
     }
 
+    addTrans(trans) {
+        // 检查是否是重复的交易
+        const isExist = this.data.some(v => this.isEqualObj(v, trans));
+        if (isExist) {
+            // console.log('[信息] 交易已存在，忽略');
+            return false;
+        }
+
+        // 验证交易
+        if (this.isvalidTrans(trans)) {
+            this.data.push(trans);
+            console.log('[信息] 新交易已添加到交易池');
+            return true;
+        } else {
+            console.log('[错误] 交易验证失败，拒绝添加到交易池');
+            return false;
+        }
+    }
     // 挖矿
     mine(address) {
         // 校验所有的消息合法性
