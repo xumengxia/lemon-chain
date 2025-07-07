@@ -90,12 +90,12 @@ vorpal
         })
         callback();
     });
-// vorpal
-//     .command('hello', '你好啊')
-//     .action(function (args, callback) {
-//         this.log('你好啊，柠檬链');
-//         callback();
-//     });
+vorpal
+    .command('pending', '查一下还没有打包的交易')
+    .action(function (args, callback) {
+        this.log(formatLog(blockchain.data), '查一下还没有打包的交易');
+        callback();
+    });
 console.log('welcome to lemon-chain');
 vorpal.exec('hello');
 vorpal.delimiter("lemon-chain =>").show();
